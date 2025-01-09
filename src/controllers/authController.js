@@ -46,37 +46,34 @@ class AuthController {
 
   async login(req, res) {
     const { email, senha } = req.body;
-
     try {
-      // Buscar usuário pelo email
       const [users] = await connection.execute(
         'SELECT * FROM cyclists WHERE email = ?',
         [email]
       );
-
       if (users.length === 0) {
         return res.status(401).json({ error: 'Credenciais inválidas' });
       }
-
+  
       const user = users[0];
-
-      // Verificar senha
       const isValidPassword = await bcrypt.compare(senha, user.senha);
       if (!isValidPassword) {
         return res.status(401).json({ error: 'Credenciais inválidas' });
       }
-
-      // Gerar token JWT
+  
       const token = jwt.sign(
         { id: user.id, email: user.email },
         process.env.JWT_SECRET,
         { expiresIn: '24h' }
       );
-
-      // Resposta com apenas mensagem e token
+  
+      // Retorna dados do usuário sem a senha
+      const { senha: _, ...userData } = user;
+      
       res.json({
         mensagem: 'Usuário logado com sucesso',
-        token
+        token,
+        usuario: userData
       });
     } catch (error) {
       console.error(error);
